@@ -15,7 +15,10 @@ struct Rates {
 fn day3_part1(input: &[String]) -> Option<i32> {
     let record_len = input[0].len();
     let counts = vec![0; record_len];
-    let initial_rates = Rates{ beta: 0, epsilon: 0 };
+    let initial_rates = Rates {
+        beta: 0,
+        epsilon: 0,
+    };
     let input_len = input.len();
 
     let final_rates = input
@@ -24,15 +27,14 @@ fn day3_part1(input: &[String]) -> Option<i32> {
             record
                 .chars()
                 .enumerate()
-                .for_each(|(i, c)| {
-                    counts[i] += c.to_digit(2).unwrap_or(0)
-                });
+                .for_each(|(i, c)| counts[i] += c.to_digit(2).unwrap_or(0));
             counts
         })
         .iter()
         .fold(initial_rates, |mut moving_rate, count| {
             moving_rate.beta = (moving_rate.beta << 1) | (input_len > (count * 2) as usize) as i32;
-            moving_rate.epsilon = (moving_rate.epsilon << 1) | (input_len <= (count * 2) as usize) as i32;
+            moving_rate.epsilon =
+                (moving_rate.epsilon << 1) | (input_len <= (count * 2) as usize) as i32;
 
             moving_rate
         });
@@ -55,10 +57,9 @@ fn day3_part2(input: &[String]) -> Option<i32> {
         let mut ones = Vec::new();
         let mut zeroes = Vec::new();
         for record in oxygen_records {
-            if record.get(i..i+1).unwrap() == "1" {
+            if record.get(i..i + 1).unwrap() == "1" {
                 ones.push(record);
-            }
-            else {
+            } else {
                 zeroes.push(record);
             }
         }
@@ -79,10 +80,9 @@ fn day3_part2(input: &[String]) -> Option<i32> {
         let mut ones = Vec::new();
         let mut zeroes = Vec::new();
         for record in scrubber_records {
-            if record.get(i..i+1).unwrap() == "1" {
+            if record.get(i..i + 1).unwrap() == "1" {
                 ones.push(record);
-            }
-            else {
+            } else {
                 zeroes.push(record);
             }
         }

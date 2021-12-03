@@ -1,12 +1,12 @@
+use crate::day02::Directions::{Down, Forward, Up};
 use aoc_runner_derive::{aoc, aoc_generator};
 use std::num::ParseIntError;
-use crate::day02::Directions::{Forward, Down, Up};
 
 #[derive(Copy, Clone, Debug)]
 struct Location {
     x: i32,
     y: i32,
-    aim: i32
+    aim: i32,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -15,7 +15,6 @@ enum Directions<T> {
     Down(T),
     Up(T),
 }
-
 
 impl From<&str> for Directions<i32> {
     fn from(s: &str) -> Self {
@@ -30,15 +29,17 @@ impl From<&str> for Directions<i32> {
     }
 }
 
-
 #[aoc_generator(day2)]
 fn parse_input_day2(input: &str) -> Result<Vec<Directions<i32>>, ParseIntError> {
-    Ok(input.lines().map(Directions::from).collect::<Vec<Directions<i32>>>())
+    Ok(input
+        .lines()
+        .map(Directions::from)
+        .collect::<Vec<Directions<i32>>>())
 }
 
 #[aoc(day2, part1)]
 fn day2_part1(input: &[Directions<i32>]) -> Option<i32> {
-    let initial_location = Location{ x: 0, y: 0, aim: 0 };
+    let initial_location = Location { x: 0, y: 0, aim: 0 };
 
     let final_location = input
         .iter()
@@ -52,13 +53,12 @@ fn day2_part1(input: &[Directions<i32>]) -> Option<i32> {
             current_location
         });
 
-
     Some(final_location.x * final_location.y)
 }
 
 #[aoc(day2, part2)]
 fn day2_part2(input: &[Directions<i32>]) -> Option<i32> {
-    let initial_location = Location{ x: 0, y: 0, aim: 0 };
+    let initial_location = Location { x: 0, y: 0, aim: 0 };
 
     let final_location = input
         .iter()
@@ -67,14 +67,13 @@ fn day2_part2(input: &[Directions<i32>]) -> Option<i32> {
                 Forward(n) => {
                     current_location.x += n;
                     current_location.y += current_location.aim * n;
-                },
+                }
                 Down(n) => current_location.aim += n,
                 Up(n) => current_location.aim -= n,
             }
 
             current_location
         });
-
 
     Some(final_location.x * final_location.y)
 }
@@ -92,13 +91,27 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let input = vec![Forward(5 as i32), Down(5), Forward(8), Up(3), Down(8), Forward(2)];
+        let input = vec![
+            Forward(5 as i32),
+            Down(5),
+            Forward(8),
+            Up(3),
+            Down(8),
+            Forward(2),
+        ];
         assert_eq!(day2_part1(&input), Some(150))
     }
 
     #[test]
     fn test_part2() {
-        let input = vec![Forward(5 as i32), Down(5), Forward(8), Up(3), Down(8), Forward(2)];
+        let input = vec![
+            Forward(5 as i32),
+            Down(5),
+            Forward(8),
+            Up(3),
+            Down(8),
+            Forward(2),
+        ];
         assert_eq!(day2_part2(&input), Some(900))
     }
 }

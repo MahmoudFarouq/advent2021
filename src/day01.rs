@@ -11,13 +11,7 @@ fn parse_input_day1(input: &str) -> Result<Vec<i32>, ParseIntError> {
 fn day1_part1(input: &[i32]) -> Option<i32> {
     input
         .windows(2)
-        .fold(0, |c, w| {
-            if w[1] > w[0] {
-                c + 1
-            } else {
-                c
-            }
-        })
+        .fold(0, |c, w| if w[1] > w[0] { c + 1 } else { c })
         .into()
 }
 
