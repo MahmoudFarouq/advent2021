@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use itertools::Itertools;
 use std::num::ParseIntError;
 
 #[aoc_generator(day1)]
@@ -18,23 +19,12 @@ fn day1_part1(input: &[i32]) -> Option<i32> {
 /// 1737
 #[aoc(day1, part2)]
 fn day1_part2(input: &[i32]) -> Option<i32> {
-    let mut count = 0;
-
-    let mut windows = input.windows(3).into_iter();
-
-    let mut cursor = windows.next().map(|w| w.iter().sum::<i32>()).unwrap();
-
-    for window in windows {
-        let new_sum = window.iter().sum::<i32>();
-
-        if new_sum > cursor {
-            count += 1
-        }
-
-        cursor = new_sum
-    }
-
-    count.into()
+    input
+        .windows(3)
+        .map(|window| window.iter().sum())
+        .tuple_windows()
+        .fold(0, |c, w: (i32, i32)| if w.1 > w.0 { c + 1 } else { c })
+        .into()
 }
 
 #[cfg(test)]
