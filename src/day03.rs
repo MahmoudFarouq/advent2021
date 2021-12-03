@@ -1,103 +1,127 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
-#[aoc_generator(day3)]
-fn parse_input_day3(input: &str) -> Vec<String> {
-    input.lines().map(str::to_string).collect()
+struct ParsedInput {
+    entry_length: u32,
+    data: Vec<usize>,
 }
 
-#[derive(Debug)]
-struct Rates {
-    beta: i32,
-    epsilon: i32,
+#[aoc_generator(day3)]
+fn parse_input_day3(input: &str) -> ParsedInput {
+    let mut entry_length = 0;
+    let data = input
+        .lines()
+        .map(|l| {
+            entry_length = l.len();
+            usize::from_str_radix(l, 2).unwrap()
+        })
+        .collect();
+
+    ParsedInput {
+        entry_length: entry_length as u32,
+        data,
+    }
+}
+
+struct BitsIterator {
+    num: usize,
+    mask: usize,
+}
+
+impl BitsIterator {
+    fn new_with_length(num: usize, length: u32) -> Self {
+        BitsIterator {
+            num,
+            mask: 1 << (length - 1),
+        }
+    }
+}
+
+impl Iterator for BitsIterator {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.mask {
+            0 => None,
+            _ => {
+                let r = self.num & self.mask;
+                self.mask >>= 1;
+                Some(if r == 0 { 0 } else { 1 })
+            }
+        }
+    }
 }
 
 #[aoc(day3, part1)]
-fn day3_part1(input: &[String]) -> Option<i32> {
-    let record_len = input[0].len();
-    let counts = vec![0; record_len];
-    let initial_rates = Rates {
-        beta: 0,
-        epsilon: 0,
-    };
-    let input_len = input.len();
+fn day3_part1(parsed_input: &ParsedInput) -> Option<i32> {
+    let record_len = parsed_input.entry_length;
+    let input_len = parsed_input.data.len();
 
-    let final_rates = input
+    let final_rates = parsed_input
+        .data
         .iter()
-        .fold(counts, |mut counts, record| {
-            record
-                .chars()
+        .fold(vec![0; record_len as usize], |mut counts, record| {
+            BitsIterator::new_with_length(*record, record_len)
                 .enumerate()
-                .for_each(|(i, c)| counts[i] += c.to_digit(2).unwrap_or(0));
+                .for_each(|(i, bit)| counts[i] += bit);
             counts
         })
         .iter()
-        .fold(initial_rates, |mut moving_rate, count| {
-            moving_rate.beta = (moving_rate.beta << 1) | (input_len > (count * 2) as usize) as i32;
-            moving_rate.epsilon =
-                (moving_rate.epsilon << 1) | (input_len <= (count * 2) as usize) as i32;
-
-            moving_rate
+        .fold((0, 0), |(b, e), count| {
+            let flag = input_len >> 1 > *count;
+            ((b << 1) | flag as i32, (e << 1) | !flag as i32)
         });
 
-    println!("{:?}", final_rates);
-
-    Some(final_rates.beta * final_rates.epsilon)
+    Some(final_rates.0 * final_rates.1)
 }
 
 #[aoc(day3, part2)]
-fn day3_part2(input: &[String]) -> Option<i32> {
-    let record_len = input[0].len();
+fn day3_part2(parsed_input: &ParsedInput) -> Option<i32> {
+    let record_len = parsed_input.entry_length;
 
-    let mut oxygen_records = input.to_owned();
-    for i in 0..record_len {
-        if oxygen_records.len() == 1 {
-            break;
-        }
+    let mut input = parsed_input.data.to_vec();
+    input.sort_unstable();
+    input.reverse();
 
-        let mut ones = Vec::new();
-        let mut zeroes = Vec::new();
-        for record in oxygen_records {
-            if record.get(i..i + 1).unwrap() == "1" {
-                ones.push(record);
-            } else {
-                zeroes.push(record);
-            }
-        }
+    let oxy_selector = |ones_count: usize, zeroes_count: usize| ones_count >= zeroes_count;
+    let oxy = magic_search(&input, record_len, oxy_selector);
 
-        if ones.len() > zeroes.len() || ones.len() == zeroes.len() {
-            oxygen_records = ones
-        } else {
-            oxygen_records = zeroes
-        }
-    }
-
-    let mut scrubber_records = input.to_owned();
-    for i in 0..record_len {
-        if scrubber_records.len() == 1 {
-            break;
-        }
-
-        let mut ones = Vec::new();
-        let mut zeroes = Vec::new();
-        for record in scrubber_records {
-            if record.get(i..i + 1).unwrap() == "1" {
-                ones.push(record);
-            } else {
-                zeroes.push(record);
-            }
-        }
-
-        if ones.len() > zeroes.len() || ones.len() == zeroes.len() {
-            scrubber_records = zeroes
-        } else {
-            scrubber_records = ones
-        }
-    }
-
-    let oxy = isize::from_str_radix(&oxygen_records[0], 2).unwrap();
-    let scu = isize::from_str_radix(&scrubber_records[0], 2).unwrap();
+    let scu_selector = |ones_count: usize, zeroes_count: usize| zeroes_count > ones_count;
+    let scu = magic_search(&input, record_len, scu_selector);
 
     Some((oxy * scu) as i32)
+}
+
+fn magic_search(data: &[usize], len: u32, selector: fn(usize, usize) -> bool) -> usize {
+    let mut bits_data = data
+        .iter()
+        .map(|r| BitsIterator::new_with_length(*r, len))
+        .collect::<Vec<BitsIterator>>();
+
+    smaller_magic_search(&mut bits_data, selector)
+}
+
+fn smaller_magic_search(
+    bits_data: &mut [BitsIterator],
+    selector: fn(usize, usize) -> bool,
+) -> usize {
+    if bits_data.len() == 1 {
+        return bits_data[0].num;
+    }
+
+    let mut ones_count = 0;
+    for item in bits_data.iter_mut() {
+        if let Some(1) = item.next() {
+            ones_count += 1;
+        }
+    }
+
+    let zeroes_count = bits_data.len() - ones_count;
+
+    if selector(ones_count, zeroes_count) {
+        smaller_magic_search(&mut bits_data[..ones_count], selector)
+    } else {
+        smaller_magic_search(&mut bits_data[ones_count..], selector)
+    }
 }
 
 #[cfg(test)]
@@ -105,42 +129,48 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_bits_iterator_using_new_with_length() {
+        let mut iterator = BitsIterator::new_with_length(5, 8);
+
+        // TODO: Find a way to compare iterators or vectors.
+        assert_eq!(Some(0), iterator.next());
+        assert_eq!(Some(0), iterator.next());
+        assert_eq!(Some(0), iterator.next());
+        assert_eq!(Some(0), iterator.next());
+        assert_eq!(Some(0), iterator.next());
+        assert_eq!(Some(1), iterator.next());
+        assert_eq!(Some(0), iterator.next());
+        assert_eq!(Some(1), iterator.next());
+        assert_eq!(None, iterator.next());
+    }
+
+    #[test]
     fn test_part1() {
         let input = vec![
-            "00100".to_string(),
-            "11110".to_string(),
-            "10110".to_string(),
-            "10111".to_string(),
-            "10101".to_string(),
-            "01111".to_string(),
-            "00111".to_string(),
-            "11100".to_string(),
-            "10000".to_string(),
-            "11001".to_string(),
-            "00010".to_string(),
-            "01010".to_string(),
+            0b00100, 0b11110, 0b10110, 0b10111, 0b10101, 0b01111, 0b00111, 0b11100, 0b10000,
+            0b11001, 0b00010, 0b01010,
         ];
-
-        assert_eq!(day3_part1(&input), Some(198));
+        assert_eq!(
+            day3_part1(&ParsedInput {
+                data: input,
+                entry_length: 5,
+            }),
+            Some(198)
+        );
     }
 
     #[test]
     fn test_part2() {
         let input = vec![
-            "00100".to_string(),
-            "11110".to_string(),
-            "10110".to_string(),
-            "10111".to_string(),
-            "10101".to_string(),
-            "01111".to_string(),
-            "00111".to_string(),
-            "11100".to_string(),
-            "10000".to_string(),
-            "11001".to_string(),
-            "00010".to_string(),
-            "01010".to_string(),
+            0b00100, 0b11110, 0b10110, 0b10111, 0b10101, 0b01111, 0b00111, 0b11100, 0b10000,
+            0b11001, 0b00010, 0b01010,
         ];
-
-        assert_eq!(day3_part2(&input), Some(230));
+        assert_eq!(
+            day3_part2(&ParsedInput {
+                data: input,
+                entry_length: 5,
+            }),
+            Some(230)
+        );
     }
 }
