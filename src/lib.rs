@@ -1,3 +1,5 @@
+#![feature(try_trait_v2)]
+
 use aoc_runner_derive::aoc_lib;
 
 mod day01;
