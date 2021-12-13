@@ -1,7 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use crate::day12::Cave::{End, Small, Start};
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
-use crate::day12::Cave::{End, Small, Start};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 enum Cave {
@@ -69,21 +69,19 @@ impl From<&str> for Cave {
             "end" => Cave::End,
             s if s.to_lowercase() == s => Cave::Small(s.to_string()),
             s if s.to_uppercase() == s => Cave::Big(s.to_string()),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
 
 impl FromIterator<(Cave, Cave)> for AdjacencyList {
-    fn from_iter<T: IntoIterator<Item=(Cave, Cave)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = (Cave, Cave)>>(iter: T) -> Self {
         let mut list = AdjacencyList::new();
 
-        iter
-            .into_iter()
-            .for_each(|(from, to): (Cave, Cave)| {
-                list.map.entry(from.clone()).or_default().push(to.clone());
-                list.map.entry(to).or_default().push(from);
-            });
+        iter.into_iter().for_each(|(from, to): (Cave, Cave)| {
+            list.map.entry(from.clone()).or_default().push(to.clone());
+            list.map.entry(to).or_default().push(from);
+        });
 
         list
     }
@@ -91,7 +89,15 @@ impl FromIterator<(Cave, Cave)> for AdjacencyList {
 
 #[aoc_generator(day12)]
 fn parse_input_day12(input: &str) -> AdjacencyList {
-    input.lines().map(|l| l.split('-').map(Cave::from).collect_tuple::<(Cave, Cave)>().unwrap()).collect()
+    input
+        .lines()
+        .map(|l| {
+            l.split('-')
+                .map(Cave::from)
+                .collect_tuple::<(Cave, Cave)>()
+                .unwrap()
+        })
+        .collect()
 }
 
 #[aoc(day12, part1)]
